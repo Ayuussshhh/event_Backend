@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Payment</title>
+</head>
+<body>
+    <h1>Payment for <%= event.name %></h1>
+    <p>Price: $<%= event.price %></p>
+    <p>Quantity: <%= event.quantity %> participants</p>
+    
+    <!-- Add your payment integration here -->
+    <form action="/pay/<%= event._id %>" method="POST">
+        <input type="hidden" name="eventId" value="<%= event._id %>" />
+        <button type="submit">Proceed to Payment</button>
+    </form>
+</body>
+</html>

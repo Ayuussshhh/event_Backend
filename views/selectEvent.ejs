@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Event</title>
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <h1>Event: <%= event.name %></h1>
+    <h2>Price: ₹<%= event.price %></h2>
+    
+    <form id="payment-form">
+        <input type="hidden" id="event-name" value="<%= event.name %>">
+        <input type="hidden" id="price" value="<%= event.price %>">
+        <button type="submit">Proceed to Payment</button>
+    </form>
+
+    <script>
+      var stripe = Stripe('<%= process.env.STRIPE_PUBLISHABLE_KEY %>'); // Make sure this key is rendered in the EJS file
+      
+      document.getElementById('payment-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+
+          const eventName = document.getElementById('event-name').value;
+          const price = document.getElementById('price').value;
+
+          const res = await fetch('/checkout', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ eventName, price }),
+          });
+
+          const session = await res.json();
+
+          // Redirect to Stripe Checkout
+          window.location.href = session.url;
+      });
+    </script>
+</body>
+</html>
