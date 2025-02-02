@@ -1,47 +1,54 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import cookieParser from 'cookie-parser';
-import cors from 'cors';
-import passport from 'passport';
-import './config/passport.js'; // Updated import path
+import express from "express";
+import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+import path from "path";
+import cors from "cors"; // Added CORS
 
-import authRoutes from './routes/auth.route.js';
-import eventRoutes from './routes/event.route.js';
-import ticketRoutes from './routes/ticket.route.js';
-import {connectDB} from './lib/db.js';
+import authRoutes from "./routes/auth.route.js";
+import eventRoutes from "./routes/event.route.js"; // Fixed the route path
+import cartRoutes from "./routes/cart.route.js";
+import paymentRoutes from "./routes/payment.route.js";
+import analyticsRoutes from "./routes/analytics.route.js";
 
-// Load environment variables
+import { connectDB } from "./lib/db.js";
+
 dotenv.config();
 
-// Initialize Express app
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(express.json()); // Parse JSON bodies
-app.use(cookieParser()); // Parse cookies
-app.use(
-  cors({
-    origin: 'http://localhost:5173', // Allow frontend to connect
-    credentials: true, // Allow cookies and credentials
-  })
-);
+const __dirname = path.resolve();
 
-// Passport initialization
-app.use(passport.initialize());
+// CORS middleware (you can specify your allowed origins here)
+app.use(cors({
+  origin: process.env.CLIENT_URL, // for example, allow frontend hosted on this URL
+  credentials: true,
+}));
 
-// Routes
-app.use('/api/auth', authRoutes); // Authentication routes
-app.use('/api/events', eventRoutes); // Event management routes
-app.use('/api/tickets', ticketRoutes); // Ticket management routes
+app.use(express.json({ limit: "10mb" })); // allows you to parse the body of the request
+app.use(cookieParser());
 
-// Health check route
-app.get('/', (req, res) => {
-  res.send('Server is running');
+app.use("/api/auth", authRoutes);
+app.use("/api/events", eventRoutes); // Fixed route path for events
+app.use("/api/cart", cartRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/analytics", analyticsRoutes);
+
+// Error handling middleware for unexpected errors
+app.use((err, req, res, next) => {
+  console.error(err.stack); // Log error stack for debugging
+  res.status(500).json({ message: "Something went wrong on the server", error: err.message });
 });
 
-// Start the server
-const PORT = process.env.PORT || 5000;
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "/frontend/dist")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
+  });
+}
+
 app.listen(PORT, () => {
-  console.log(`Server is running on PORT: ${PORT}`);
-  connectDB(); // Connect to MongoDB
+  console.log("Server is running on http://localhost:" + PORT);
+  connectDB(); // Ensure DB connection before the server starts
 });
