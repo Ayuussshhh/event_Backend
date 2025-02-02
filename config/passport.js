@@ -1,21 +1,47 @@
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-require('dotenv').config();  // To access environment variables from .env
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { User } from '../models/User.js';
 
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID, // Set your Google Client ID
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET, // Set your Google Client Secret
-  callbackURL: process.env.GOOGLE_CALLBACK_URL, // Set your callback URL
-}, function(accessToken, refreshToken, profile, done) {
-  // Here you can save the profile to your database if needed
-  return done(null, profile);
-}));
+// Google OAuth
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: 'http://localhost:5000/api/auth/google/callback',
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        let user = await User.findOne({ googleId: profile.id });
+        if (!user) {
+          user = new User({
+            googleId: profile.id,
+            email: profile.emails[0].value,
+            fullName: profile.displayName,
+            profilePic: profile.photos[0].value,
+          });
+          await user.save();
+        }
+        done(null, user);
+      } catch (error) {
+        done(error, null);
+      }
+    }
+  )
+);
 
-// Serialize and deserialize the user (used for sessions)
-passport.serializeUser(function(user, done) {
-  done(null, user);
+
+// Serialize user
+passport.serializeUser((user, done) => {
+  done(null, user.id);
 });
 
-passport.deserializeUser(function(user, done) {
-  done(null, user);
+// Deserialize user
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (error) {
+    done(error, null);
+  }
 });
