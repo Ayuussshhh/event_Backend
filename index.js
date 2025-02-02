@@ -2,13 +2,13 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import mongoose from 'mongoose';
 import passport from 'passport';
 import './config/passport.js'; // Updated import path
 
 import authRoutes from './routes/auth.route.js';
 import eventRoutes from './routes/event.route.js';
 import ticketRoutes from './routes/ticket.route.js';
+import {connectDB} from './lib/db.js';
 
 // Load environment variables
 dotenv.config();
@@ -28,20 +28,6 @@ app.use(
 
 // Passport initialization
 app.use(passport.initialize());
-
-// Database connection
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log('MongoDB connected');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    process.exit(1); // Exit the process if the connection fails
-  }
-};
 
 // Routes
 app.use('/api/auth', authRoutes); // Authentication routes
